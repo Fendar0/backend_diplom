@@ -1,5 +1,6 @@
 package com.shiptelemetry.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.*;
@@ -10,7 +11,7 @@ import lombok.*;
 @AllArgsConstructor
 @Getter
 @Setter
-@ToString
+@ToString(exclude = "ship")
 public class EnvironmentData {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,6 +19,7 @@ public class EnvironmentData {
 
     @ManyToOne
     @JoinColumn(name = "ship_id", nullable = false)
+    @JsonIgnore
     private Ship ship;
 
     @ManyToOne
