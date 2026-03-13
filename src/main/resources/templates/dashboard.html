@@ -1,71 +1,250 @@
+<!-- dashboard.html -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Панель управления судном</title>
+    <title>Мониторинг судна</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #f8f9fa; }
-        .chart-wrapper {
-            position: relative;
-            height: 160px; /* Фиксированная высота предотвращает бесконечный рост */
-            width: 100%;
-        }
-        .card { border: none; transition: transform 0.2s; }
-        .card:hover { transform: translateY(-3px); }
-        h6 { font-size: 0.85rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; }
-        .section-title { border-left: 4px solid #0d6efd; padding-left: 10px; margin: 30px 0 15px 0; }
+        body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .chart-wrapper { position: relative; height: 140px; width: 100%; }
+        .card { border: none; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .nav-value { font-size: 1.5rem; font-weight: bold; color: #0d6efd; }
+        .nav-label { font-size: 0.75rem; text-transform: uppercase; color: #6c757d; font-weight: 600; }
+        .section-title { margin: 25px 0 15px; font-weight: 700; color: #343a40; border-left: 5px solid #0d6efd; padding-left: 15px; }
+        .status-badge { font-size: 1.2rem; padding: 8px 15px; border-radius: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm">
-        <h2 class="m-0">Телеметрия: <span class="text-primary" th:text="${ship.name}">Судно</span></h2>
-        <div>
-            <span class="badge bg-light text-dark border">IMO: [[${ship.imo}]]</span>
-            <span class="badge bg-primary">MMSI: [[${ship.mmsi}]]</span>
+    <div class="d-flex align-items-center mb-3">
+        <a href="/ships" class="btn btn-outline-secondary btn-sm me-3">
+            <i class="bi bi-arrow-left"></i> К списку судов
+        </a>
+    </div>
+
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-header bg-white border-0 pt-3">
+            <h2 class="m-0 text-dark">
+                <i class="bi bi-ship-front text-primary"></i> [[${ship.name}]]
+                <span class="badge bg-secondary ms-2 status-badge">[[${ship.shipType}]]</span>
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-2 border-end">
+                    <div class="nav-label">MMSI</div>
+                    <div class="nav-value">[[${ship.mmsi}]]</div>
+                </div>
+                <div class="col-md-2 border-end">
+                    <div class="nav-label">IMO</div>
+                    <div class="nav-value">[[${ship?.imo ?: '—'}]]</div>
+                </div>
+                <div class="col-md-2 border-end">
+                    <div class="nav-label">Длина</div>
+                    <div class="nav-value">[[${ship?.length ?: '—'}]] м</div>
+                </div>
+                <div class="col-md-2 border-end">
+                    <div class="nav-label">Ширина</div>
+                    <div class="nav-value">[[${ship?.width ?: '—'}]] м</div>
+                </div>
+                <div class="col-md-2 border-end">
+                    <div class="nav-label">Осадка</div>
+                    <div class="nav-value">[[${ship?.draft ?: '—'}]] м</div>
+                </div>
+                <div class="col-md-2">
+                    <div class="nav-label">Флаг</div>
+                    <div class="nav-value">[[${ship?.flag ?: '—'}]]</div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <h5 class="section-title">Силовая установка</h5>
-    <div class="row g-3">
-        <div class="col-md-3"><div class="card p-3 shadow-sm"><h6>Обороты (RPM)</h6><div class="chart-wrapper"><canvas id="c_rpm"></canvas></div></div></div>
-        <div class="col-md-3"><div class="card p-3 shadow-sm"><h6>Расход (л/час)</h6><div class="chart-wrapper"><canvas id="c_frate"></canvas></div></div></div>
-        <div class="col-md-3"><div class="card p-3 shadow-sm"><h6>Общий расход</h6><div class="chart-wrapper"><canvas id="c_ftotal"></canvas></div></div></div>
-        <div class="col-md-3"><div class="card p-3 shadow-sm"><h6>Остаток (тонн)</h6><div class="chart-wrapper"><canvas id="c_frem"></canvas></div></div></div>
-        <div class="col-md-3"><div class="card p-3 shadow-sm"><h6>Мощность (кВт)</h6><div class="chart-wrapper"><canvas id="c_pwr"></canvas></div></div></div>
-        <div class="col-md-3"><div class="card p-3 shadow-sm"><h6>Темп. ОЖ (°C)</h6><div class="chart-wrapper"><canvas id="c_ctemp"></canvas></div></div></div>
-        <div class="col-md-3"><div class="card p-3 shadow-sm"><h6>Давление масла</h6><div class="chart-wrapper"><canvas id="c_oil"></canvas></div></div></div>
+    <!-- Информация о рейсе -->
+    <div class="card mb-4" th:if="${voyage != null}">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-route text-success"></i> Текущий рейс</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="nav-label">Порт отправления</div>
+                    <div class="nav-value">[[${voyage?.departurePort ?: '—'}]]</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Порт назначения</div>
+                    <div class="nav-value">[[${voyage?.destinationPort ?: '—'}]]</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Время отбытия</div>
+                    <div class="nav-value">[[${#temporals.format(voyage?.departureTime, 'HH:mm dd.MM.yyyy')} ?: '—']]</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Время прибытия</div>
+                    <div class="nav-value">[[${#temporals.format(voyage?.arrivalTime, 'HH:mm dd.MM.yyyy')} ?: '—']]</div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <span class="badge" th:classappend="${voyage.voyageStatus.name() == 'PLANNED' ? 'bg-warning' : (voyage.voyageStatus.name() == 'IN_PROGRESS' ? 'bg-success' : (voyage.voyageStatus.name() == 'COMPLETED' ? 'bg-primary' : (voyage.voyageStatus.name() == 'DELAY' ? 'bg-danger' : '')))}">
+                    [[${voyage?.voyageStatus.name() == 'PLANNED' ? 'ПЛАНИРОВАНИЕ' : (voyage?.voyageStatus.name() == 'IN_PROGRESS' ? 'В ПРОЦЕССЕ' : (voyage?.voyageStatus.name() == 'COMPLETED' ? 'ЗАВЕРШЕН' : (voyage?.voyageStatus.name() == 'DELAY' ? 'ЗАДЕРЖКА' : '—')))}]]
+                </span>
+            </div>
+        </div>
     </div>
 
-    <h5 class="section-title">Навигация</h5>
-    <div class="row g-3">
-        <div class="col-md-4"><div class="card p-3 shadow-sm"><h6>Скорость (узлы)</h6><div class="chart-wrapper"><canvas id="c_spd"></canvas></div></div></div>
-        <div class="col-md-4"><div class="card p-3 shadow-sm"><h6>Курс (°)</h6><div class="chart-wrapper"><canvas id="c_crs"></canvas></div></div></div>
-        <div class="col-md-4"><div class="card p-3 shadow-sm"><h6>Heading (°)</h6><div class="chart-wrapper"><canvas id="c_hdg"></canvas></div></div></div>
+    <!-- Фильтр по датам -->
+    <div class="mb-4">
+        <form class="row g-3" th:action="@{/ship/{id}(id=${ship.id})}" method="get">
+            <div class="col-md-5">
+                <label class="form-label fs-5">Начало периода</label>
+                <input type="datetime-local" class="form-control fs-5" name="start" th:value="${start != null ? #temporals.format(start, 'yyyy-MM-dd''T''HH:mm') : ''}">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label fs-5">Конец периода</label>
+                <input type="datetime-local" class="form-control fs-5" name="end" th:value="${end != null ? #temporals.format(end, 'yyyy-MM-dd''T''HH:mm') : ''}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100 fs-5">Фильтр</button>
+            </div>
+        </form>
+        <div class="mt-2 text-end">
+            <a th:href="@{/ship/{id}(id=${ship.id})}" class="btn btn-secondary fs-5">Сброс</a>
+        </div>
     </div>
 
-    <h5 class="section-title">Окружающая среда</h5>
-    <div class="row g-3">
-        <div class="col-md-3"><div class="card p-3 shadow-sm"><h6>Скорость ветра</h6><div class="chart-wrapper"><canvas id="c_wspd"></canvas></div></div></div>
-        <div class="col-md-3"><div class="card p-3 shadow-sm"><h6>Напр. ветра</h6><div class="chart-wrapper"><canvas id="c_wdir"></canvas></div></div></div>
-        <div class="col-md-3"><div class="card p-3 shadow-sm"><h6>Темп. воздуха</h6><div class="chart-wrapper"><canvas id="c_atemp"></canvas></div></div></div>
-        <div class="col-md-3"><div class="card p-3 shadow-sm"><h6>Темп. воды</h6><div class="chart-wrapper"><canvas id="c_wtemp"></canvas></div></div></div>
-        <div class="col-md-3"><div class="card p-3 shadow-sm"><h6>Давление (гПа)</h6><div class="chart-wrapper"><canvas id="c_pres"></canvas></div></div></div>
-        <div class="col-md-3"><div class="card p-3 shadow-sm"><h6>Глубина (м)</h6><div class="chart-wrapper"><canvas id="c_dpth"></canvas></div></div></div>
-        <div class="col-md-3"><div class="card p-3 shadow-sm"><h6>Высота волны</h6><div class="chart-wrapper"><canvas id="c_wave"></canvas></div></div></div>
+    <!-- Текущая позиция -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-geo-alt text-danger"></i> Текущая позиция</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="nav-label">Широта / Долгота</div>
+                    <div class="nav-value">[[${lastPos?.latitude ?: '—'}]] / [[${lastPos?.longitude ?: '—'}]]</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Скорость</div>
+                    <div class="nav-value">[[${lastPos?.speed ?: '—'}]] узл.</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Курс</div>
+                    <div class="nav-value" th:with="dir=${lastPos?.course}">
+                        [[${dir != null ? dir + '° (' + (dir >= 337.5 or dir < 22.5 ? 'Северный' : (dir >= 22.5 and dir < 67.5 ? 'Северо-восточный' : (dir >= 67.5 and dir < 112.5 ? 'Восточный' : (dir >= 112.5 and dir < 157.5 ? 'Юго-восточный' : (dir >= 157.5 and dir < 202.5 ? 'Южный' : (dir >= 202.5 and dir < 247.5 ? 'Юго-западный' : (dir >= 247.5 and dir < 292.5 ? 'Западный' : 'Северо-западный'))))))) : '—'}]]
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Время данных</div>
+                    <div class="nav-value">[[${#temporals.format(lastPos?.dataTimestamp, 'HH:mm dd.MM.yyyy')} ?: '—']]</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Данные окружающей среды -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-cloud-fog text-info"></i> Окружающая среда</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="nav-label">Ветер (скорость)</div>
+                    <div class="nav-value">[[${latestEnv?.windSpeed ?: '—'}]] м/с</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Ветер (направление)</div>
+                    <div class="nav-value" th:with="dir=${latestEnv?.windDirection}">
+                        [[${dir != null ? dir + '° (' + (dir >= 337.5 or dir < 22.5 ? 'Северный' : (dir >= 22.5 and dir < 67.5 ? 'Северо-восточный' : (dir >= 67.5 and dir < 112.5 ? 'Восточный' : (dir >= 112.5 and dir < 157.5 ? 'Юго-восточный' : (dir >= 157.5 and dir < 202.5 ? 'Южный' : (dir >= 202.5 and dir < 247.5 ? 'Юго-западный' : (dir >= 247.5 and dir < 292.5 ? 'Западный' : 'Северо-западный'))))))) : '—'}]]
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Темп. воздуха</div>
+                    <div class="nav-value">[[${latestEnv?.airTemp ?: '—'}]]°C</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Темп. воды</div>
+                    <div class="nav-value">[[${latestEnv?.waterTemp ?: '—'}]]°C</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Давление</div>
+                    <div class="nav-value">[[${latestEnv?.airPressure ?: '—'}]] гПа</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Глубина</div>
+                    <div class="nav-value">[[${latestEnv?.waterDepth ?: '—'}]] м</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Высота волны</div>
+                    <div class="nav-value">[[${latestEnv?.waveHeight ?: '—'}]] м</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Графики двигателя -->
+    <h4 class="section-title">Данные двигателя</h4>
+    <div class="row g-3 mb-5">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header small">Обороты (RPM)</div>
+                <div class="card-body p-2"><div class="chart-wrapper"><canvas id="c_rpm"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header small">Расход топлива (л/ч)</div>
+                <div class="card-body p-2"><div class="chart-wrapper"><canvas id="c_frate"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header small">Общий расход (л)</div>
+                <div class="card-body p-2"><div class="chart-wrapper"><canvas id="c_ftotal"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header small">Остаток топлива (л)</div>
+                <div class="card-body p-2"><div class="chart-wrapper"><canvas id="c_frem"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header small">Мощность (кВт)</div>
+                <div class="card-body p-2"><div class="chart-wrapper"><canvas id="c_pwr"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header small">Темп. охлаждения (°C)</div>
+                <div class="card-body p-2"><div class="chart-wrapper"><canvas id="c_ctemp"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header small">Давление масла (бар)</div>
+                <div class="card-body p-2"><div class="chart-wrapper"><canvas id="c_oil"></canvas></div></div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script th:inline="javascript">
     /*<![CDATA[*/
     const engine = /*[[${engineData}]]*/ [];
-    const pos = /*[[${posData}]]*/ [];
-    const env = /*[[${envData}]]*/ [];
 
+    const labelsE = engine.map(d => d.t || '');
+
+    // Функция создания графика
     function createChart(id, labels, data, color) {
+        if (data.length === 0 || data.every(v => v == null)) {
+            document.getElementById(id).parentElement.innerHTML = '<div class="text-center text-muted mt-5">Нет данных</div>';
+            return;
+        }
         new Chart(document.getElementById(id), {
             type: 'line',
             data: {
@@ -73,11 +252,10 @@
                 datasets: [{
                     data: data,
                     borderColor: color,
-                    backgroundColor: color + '10',
+                    backgroundColor: color + '33',
                     fill: true,
-                    borderWidth: 2,
                     pointRadius: 0,
-                    tension: 0.3
+                    tension: 0.2
                 }]
             },
             options: {
@@ -85,41 +263,36 @@
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: { display: false },
-                    y: { ticks: { font: { size: 10 } }, grid: { color: '#f0f0f0' } }
+                    x: {
+                        ticks: {
+                            maxTicksLimit: 5,
+                            font: { size: 9 },
+                            color: '#999'
+                        },
+                        grid: { display: false }
+                    },
+                    y: {
+                        ticks: { font: { size: 10 } },
+                        grid: { color: '#f0f0f0' }
+                    }
                 }
             }
         });
     }
 
-    const tE = engine.map(d => new Date(d.t).toLocaleTimeString());
-    const tP = pos.map(d => new Date(d.t).toLocaleTimeString());
-    const tV = env.map(d => new Date(d.t).toLocaleTimeString());
-
-    // Двигатель
-    createChart('c_rpm', tE, engine.map(d => d.rpm), '#2ecc71');
-    createChart('c_frate', tE, engine.map(d => d.fRate), '#e67e22');
-    createChart('c_ftotal', tE, engine.map(d => d.fTotal), '#d35400');
-    createChart('c_frem', tE, engine.map(d => d.fRem), '#27ae60');
-    createChart('c_pwr', tE, engine.map(d => d.pwr), '#3498db');
-    createChart('c_ctemp', tE, engine.map(d => d.cTemp), '#e74c3c');
-    createChart('c_oil', tE, engine.map(d => d.oil), '#7f8c8d');
-
-    // Навигация
-    createChart('c_spd', tP, pos.map(d => d.spd), '#3498db');
-    createChart('c_crs', tP, pos.map(d => d.crs), '#8e44ad');
-    createChart('c_hdg', tP, pos.map(d => d.hdg), '#2c3e50');
-
-    // Среда
-    createChart('c_wspd', tV, env.map(d => d.wSpd), '#1abc9c');
-    createChart('c_wdir', tV, env.map(d => d.wDir), '#16a085');
-    createChart('c_atemp', tV, env.map(d => d.aTemp), '#f1c40f');
-    createChart('c_wtemp', tV, env.map(d => d.wTemp), '#2980b9');
-    createChart('c_pres', tV, env.map(d => d.pres), '#95a5a6');
-    createChart('c_dpth', tV, env.map(d => d.dpth), '#34495e');
-    createChart('c_wave', tV, env.map(d => d.wave), '#3498db');
+    // Отрисовка при загрузке
+    document.addEventListener('DOMContentLoaded', () => {
+        if (engine.length > 0) {
+            createChart('c_rpm', labelsE, engine.map(d => d.rpm), '#2ecc71');
+            createChart('c_frate', labelsE, engine.map(d => d.fRate), '#e67e22');
+            createChart('c_ftotal', labelsE, engine.map(d => d.fTotal), '#d35400');
+            createChart('c_frem', labelsE, engine.map(d => d.fRem), '#27ae60');
+            createChart('c_pwr', labelsE, engine.map(d => d.pwr), '#3498db');
+            createChart('c_ctemp', labelsE, engine.map(d => d.cTemp), '#e74c3c');
+            createChart('c_oil', labelsE, engine.map(d => d.oil), '#7f8c8d');
+        }
+    });
     /*]]>*/
 </script>
-
 </body>
 </html>

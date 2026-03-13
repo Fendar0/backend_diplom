@@ -1,18 +1,20 @@
 package com.shiptelemetry.backend.controller;
 
+import com.shiptelemetry.backend.common.Status;
 import com.shiptelemetry.backend.entity.*;
 import com.shiptelemetry.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
@@ -21,39 +23,78 @@ public class WebController {
     private final EngineDataRepository engineRepository;
     private final PositionRepository positionRepository;
     private final EnvironmentDataRepository environmentRepository;
+    private final VoyageRepository voyageRepository;
 
-    // 1. Главная страница -> Редирект на список
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("HH:mm dd.MM.yyyy");
+
     @GetMapping("/")
     public String root() {
         return "redirect:/ships";
     }
 
-    // 2. Список судов
     @GetMapping("/ships")
     public String shipsPage(Model model) {
         model.addAttribute("ships", shipRepository.findAll());
-        return "ships"; // Ищет ships.html
+        return "ships";
     }
 
-    // 3. Дашборд с графиками
     @GetMapping("/ship/{id}")
-    public String shipDetails(@PathVariable Long id, Model model) {
-        Ship ship = shipRepository.findById(id).orElseThrow();
+    public String shipDetails(@PathVariable Long id,
+                              @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+                              @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
+                              Model model) {
 
-        // Загружаем по 100 последних записей
-        var engineHistory = engineRepository.findTop100ByShipIdOrderByDataTimestampDesc(id);
-        var posHistory = positionRepository.findTop100ByShipIdOrderByDataTimestampDesc(id);
-        var envHistory = environmentRepository.findTop100ByShipIdOrderByDataTimestampDesc(id);
+        Ship ship = shipRepository.findById(id).orElse(null);
+        if (ship == null) return "redirect:/ships";
+        model.addAttribute("ship", ship);
 
-        // Разворачиваем списки, чтобы на графике время шло слева направо
-        Collections.reverse(engineHistory);
-        Collections.reverse(posHistory);
-        Collections.reverse(envHistory);
+        List<EngineData> engineHistory = new ArrayList<>();
+        List<Position> positionHistory = new ArrayList<>();
+        List<EnvironmentData> envHistory = new ArrayList<>();
 
-        // Мапим параметры строго по твоей схеме БД
-        model.addAttribute("engineData", engineHistory.stream().map(e -> {
+        if (start == null || end == null) {
+            // Без фильтра: берем последние 100 записей в desc order
+            engineHistory = engineRepository.findTop100ByShipIdOrderByDataTimestampDesc(id);
+            positionHistory = positionRepository.findTop100ByShipIdOrderByDataTimestampDesc(id);
+            envHistory = environmentRepository.findTop100ByShipIdOrderByDataTimestampDesc(id);
+            // Разворачиваем engine для графиков (от старых к новым)
+            Collections.reverse(engineHistory);
+        } else {
+            // С фильтром: берем записи в периоде в asc order
+            engineHistory = engineRepository.findAllByShipIdAndDataTimestampBetweenOrderByDataTimestampAsc(id, start, end);
+            positionHistory = positionRepository.findAllByShipIdAndDataTimestampBetweenOrderByDataTimestampAsc(id, start, end);
+            envHistory = environmentRepository.findAllByShipIdAndDataTimestampBetweenOrderByDataTimestampAsc(id, start, end);
+        }
+
+        // Последняя позиция: самый последний в списке (для desc - get(0), для asc - get(size-1))
+        Position lastPos = !positionHistory.isEmpty() ?
+                (start == null || end == null ? positionHistory.get(0) : positionHistory.get(positionHistory.size() - 1)) : null;
+
+        // Последние данные окружения: самый последний в списке
+        EnvironmentData latestEnv = !envHistory.isEmpty() ?
+                (start == null || end == null ? envHistory.get(0) : envHistory.get(envHistory.size() - 1)) : null;
+
+        // Информация о рейсе (берем последний активный или просто самый последний, с null-safe)
+        Voyage currentVoyage = voyageRepository.findFirstByShipIdAndVoyageStatusNotOrderByDepartureTimeDesc(id, Status.COMPLETED)
+                .orElseGet(() -> voyageRepository.findAll().stream()
+                        .filter(v -> v.getShip().getId().equals(id))
+                        .max(Comparator.comparing(Voyage::getDepartureTime))
+                        .orElse(null));
+
+        model.addAttribute("lastPos", lastPos);
+        model.addAttribute("latestEnv", latestEnv);
+        model.addAttribute("voyage", currentVoyage);
+        model.addAttribute("engineData", mapEngineData(engineHistory));
+        model.addAttribute("start", start);
+        model.addAttribute("end", end);
+
+        return "dashboard";
+    }
+
+    private List<Map<String, Object>> mapEngineData(List<EngineData> data) {
+        return data.stream().map(e -> {
             Map<String, Object> m = new HashMap<>();
-            m.put("t", e.getDataTimestamp());
+            m.put("t", e.getDataTimestamp() != null ? e.getDataTimestamp().format(DATE_FORMATTER) : "");
             m.put("rpm", e.getRpm());
             m.put("fRate", e.getFuelRate());
             m.put("fTotal", e.getFuelTotal());
@@ -62,31 +103,6 @@ public class WebController {
             m.put("cTemp", e.getCoolantTemp());
             m.put("oil", e.getOilPressure());
             return m;
-        }).toList());
-
-        model.addAttribute("posData", posHistory.stream().map(p -> {
-            Map<String, Object> m = new HashMap<>();
-            m.put("t", p.getDataTimestamp());
-            m.put("spd", p.getSpeed());
-            m.put("crs", p.getCourse());
-            m.put("hdg", p.getHeading());
-            return m;
-        }).toList());
-
-        model.addAttribute("envData", envHistory.stream().map(env -> {
-            Map<String, Object> m = new HashMap<>();
-            m.put("t", env.getDataTimestamp());
-            m.put("wSpd", env.getWindSpeed());
-            m.put("wDir", env.getWindDirection());
-            m.put("aTemp", env.getAirTemp());
-            m.put("wTemp", env.getWaterTemp());
-            m.put("pres", env.getAirPressure());
-            m.put("dpth", env.getWaterDepth());
-            m.put("wave", env.getWaveHeight());
-            return m;
-        }).toList());
-
-        model.addAttribute("ship", ship);
-        return "dashboard";
+        }).collect(Collectors.toList());
     }
 }

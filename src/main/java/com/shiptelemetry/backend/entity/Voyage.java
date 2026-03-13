@@ -1,6 +1,8 @@
 package com.shiptelemetry.backend.entity;
 
+import com.shiptelemetry.backend.common.Status;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Future;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -23,18 +25,17 @@ public class Voyage {
     @Column(name = "destination_port")
     private String destinationPort;
 
-    @Column(name = "eta")
-    private LocalDateTime eta;
-
     @Column(name = "departure_port")
     private String departurePort;
 
-    @Column(name = "actual_departure")
-    private LocalDateTime actualDeparture;
+    @Column(name = "departure_time")
+    private LocalDateTime departureTime;
 
-    @Column(name = "actual_arrival")
-    private LocalDateTime actualArrival;
+    //@Future
+    @Column(name = "arrival_time")
+    private LocalDateTime arrivalTime;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "voyage_status")
-    private String voyageStatus; // Можно заменить на Enum
+    private Status voyageStatus; // Можно заменить на Enum
 }

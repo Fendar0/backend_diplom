@@ -17,9 +17,9 @@ public class TelemetryRequestDto {
     @JsonProperty("timestamp")
     public LocalDateTime dataTimestamp;
 
-    public PositionDto position;
-    public EngineDto engine;
-    public EnvironmentDto environment;
+    private PositionDto position;
+    private EngineDto engine;
+    private EnvironmentDto environment;
 
     public static class PositionDto {
         public Double latitude;
