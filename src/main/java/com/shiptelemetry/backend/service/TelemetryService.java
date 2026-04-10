@@ -131,6 +131,10 @@ public class TelemetryService {
             eng.setPowerKw(dto.getEngine().powerKw);
             eng.setCoolantTemp(dto.getEngine().coolantTemp);
             eng.setOilPressure(dto.getEngine().oilPressure);
+            eng.setExhaustTemp(dto.getEngine().exhaustTemp);
+            eng.setOilTemp(dto.getEngine().oilTemp);
+            eng.setFuelTemp(dto.getEngine().fuelTemp);
+            eng.setEngineLoadPercent(dto.getEngine().engineLoadPercent);
             engineRepository.save(eng);
         }
 
@@ -148,6 +152,9 @@ public class TelemetryService {
             env.setAirPressure(dto.getEnvironment().airPressure);
             env.setWaterDepth(dto.getEnvironment().waterDepth);
             env.setWaveHeight(dto.getEnvironment().waveHeight);
+            env.setCurrentSpeed(dto.getEnvironment().currentSpeed);
+            env.setCurrentDirection(dto.getEnvironment().currentDirection);
+            env.setHumidity(dto.getEnvironment().humidity);
             environmentDataRepository.save(env);
         }
     }

@@ -181,6 +181,18 @@
                     <div class="nav-label">Высота волны</div>
                     <div class="nav-value">[[${latestEnv?.waveHeight ?: '—'}]] м</div>
                 </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Скорость течения</div>
+                    <div class="nav-value">[[${latestEnv?.currentSpeed ?: '—'}]] м/с</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Направление течения</div>
+                    <div class="nav-value">[[${latestEnv?.currentDirection ?: '—'}]]°</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="nav-label">Влажность воздуха</div>
+                    <div class="nav-value">[[${latestEnv?.humidity ?: '—'}]] %</div>
+                </div>
             </div>
         </div>
     </div>
@@ -228,6 +240,30 @@
             <div class="card">
                 <div class="card-header small">Давление масла (бар)</div>
                 <div class="card-body p-2"><div class="chart-wrapper"><canvas id="c_oil"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header small">Темп. выхлопа (°C)</div>
+                <div class="card-body p-2"><div class="chart-wrapper"><canvas id="c_exh"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header small">Темп. масла (°C)</div>
+                <div class="card-body p-2"><div class="chart-wrapper"><canvas id="c_oilt"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header small">Темп. топлива (°C)</div>
+                <div class="card-body p-2"><div class="chart-wrapper"><canvas id="c_ftemp"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header small">Нагрузка двигателя (%)</div>
+                <div class="card-body p-2"><div class="chart-wrapper"><canvas id="c_load"></canvas></div></div>
             </div>
         </div>
     </div>
@@ -290,6 +326,10 @@
             createChart('c_pwr', labelsE, engine.map(d => d.pwr), '#3498db');
             createChart('c_ctemp', labelsE, engine.map(d => d.cTemp), '#e74c3c');
             createChart('c_oil', labelsE, engine.map(d => d.oil), '#7f8c8d');
+            createChart('c_exh', labelsE, engine.map(d => d.exhTemp), '#e74c3c');
+            createChart('c_oilt', labelsE, engine.map(d => d.oilTemp), '#f39c12');
+            createChart('c_ftemp', labelsE, engine.map(d => d.fTemp), '#9b59b6');
+            createChart('c_load', labelsE, engine.map(d => d.load), '#3498db');
         }
     });
     /*]]>*/

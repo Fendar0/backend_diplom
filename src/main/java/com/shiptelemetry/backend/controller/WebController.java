@@ -102,6 +102,10 @@ public class WebController {
             m.put("pwr", e.getPowerKw());
             m.put("cTemp", e.getCoolantTemp());
             m.put("oil", e.getOilPressure());
+            m.put("exhTemp", e.getExhaustTemp());
+            m.put("oilTemp", e.getOilTemp());
+            m.put("fTemp", e.getFuelTemp());
+            m.put("load", e.getEngineLoadPercent());
             return m;
         }).collect(Collectors.toList());
     }

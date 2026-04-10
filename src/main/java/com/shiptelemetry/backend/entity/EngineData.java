@@ -53,6 +53,18 @@ public class EngineData {
     @Column(name = "oil_pressure")
     private Double oilPressure;
 
+    @Column(name = "exhaust_temp")
+    private Double exhaustTemp;
+
+    @Column(name = "oil_temp")
+    private Double oilTemp;
+
+    @Column(name = "fuel_temp")
+    private Double fuelTemp;
+
+    @Column(name = "engine_load_percent")
+    private Double engineLoadPercent;
+
     @Column(name = "data_timestamp", nullable = false)
     private LocalDateTime dataTimestamp;
 }

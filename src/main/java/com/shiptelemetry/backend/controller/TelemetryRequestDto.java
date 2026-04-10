@@ -37,6 +37,10 @@ public class TelemetryRequestDto {
         public Double powerKw;
         public Double coolantTemp;
         public Double oilPressure;
+        public Double exhaustTemp;
+        public Double oilTemp;
+        public Double fuelTemp;
+        public Double engineLoadPercent;
     }
 
     public static class EnvironmentDto {
@@ -47,5 +51,8 @@ public class TelemetryRequestDto {
         public Double airPressure;
         public Double waterDepth;
         public Double waveHeight;
+        public Double currentSpeed;
+        public Double currentDirection;
+        public Double humidity;
     }
 }

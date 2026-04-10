@@ -51,6 +51,15 @@ public class EnvironmentData {
     @Column(name = "wave_height")
     private Double waveHeight;
 
+    @Column(name = "current_speed")
+    private Double currentSpeed;
+
+    @Column(name = "current_direction")
+    private Double currentDirection;
+
+    @Column(name = "humidity")
+    private Double humidity;
+
     @Column(name = "data_timestamp", nullable = false)
     private LocalDateTime dataTimestamp;
 }
